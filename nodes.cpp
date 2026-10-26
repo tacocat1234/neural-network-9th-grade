@@ -1,4 +1,5 @@
 #include "nodes.hpp"
+#include "neuralNetwork.hpp"
 #include "functions.hpp"
 
 Node::Node(NeuralNetwork* network, std::pair<int, int> location, double value, double bias) : network(network), location(location), value(value), bias(bias){
@@ -16,7 +17,7 @@ void Node::updateValue(){ //function that updates value of node inPlace, based o
         }
         value += bias;//add bias in
         preActivationValue = value;
-        value = activationFunction(value); //evaluated at the activation function 
+        value = network->activationFunction(value); //evaluated at the activation function 
         network->nodeValues[location.first][location.second] = value;
     }
 }
@@ -30,7 +31,7 @@ void Node::updateGradients(std::vector<double> expectedValues){
         network->nodeGradients[location.first][location.second] = gradient; //set network value
         
             //below is db/dn of bias with respect to node value
-        biasGradient = activationDerivative(preActivationValue) * 
+        biasGradient = network->activationDerivative(preActivationValue) * 
             gradient; //dn/do derivative of this node with respect to output
             
         network->biasGradients[location.first][location.second] = biasGradient; //set network value
@@ -38,7 +39,7 @@ void Node::updateGradients(std::vector<double> expectedValues){
         double partialDerivative = 0;
         for (int nextN = 0; nextN < network->layerSizes[location.first + 1]; nextN++){
             partialDerivative += 
-                activationDerivative(
+                network->activationDerivative(
                     network->nodes[location.first + 1][nextN]->preActivationValue) * 
                 //da/ds derivative of activation with resepect to sum times \/ derivative of sum
                 network->weights[location.first][location.second][nextN] * //weight coming from this position to the nextN location in the next layer
@@ -48,7 +49,7 @@ void Node::updateGradients(std::vector<double> expectedValues){
         gradient = partialDerivative;
         network->nodeGradients[location.first][location.second] = gradient;
         
-        biasGradient = activationDerivative(preActivationValue) * gradient;
+        biasGradient = network->activationDerivative(preActivationValue) * gradient;
         network->biasGradients[location.first][location.second] = biasGradient;
     }
 }

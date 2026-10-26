@@ -1,6 +1,8 @@
+#pragma once
+
 #include <vector>
 #include "functions.hpp"
-#include "neuralNetwork.hpp"
+class NeuralNetwork;
 
 
 class Node{

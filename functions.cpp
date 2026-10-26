@@ -33,7 +33,7 @@ double reluDerivative(double stimulus){
 std::vector<trainingData> formMiniBatches(int batchSize, trainingData& dataSet){
     
     //shuffle code
-       unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(dataSet.begin(), dataSet.end(), std::default_random_engine(seed));
     
     std::vector<trainingData> output;

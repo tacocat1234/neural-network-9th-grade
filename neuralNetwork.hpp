@@ -26,7 +26,6 @@ class NeuralNetwork{
         std::vector<double> layerSizes;
         double learningRate;
         int batchSize;
-    private:
         functionPtr activationFunction;
         functionPtr activationDerivative;
 };

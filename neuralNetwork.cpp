@@ -103,10 +103,27 @@ void NeuralNetwork::updateWeightsAndBiases() {//SGD updating
 }
 
 void NeuralNetwork::backpropagate(trainingData& dataSample){
-    std::vector<std::vector<double>> nodeGradientSums = nodeGradients;
-    std::vector<std::vector<double>> biasGradientSums = biasGradients;
-    networkWeights weightGradientSums = weightGradients;
-    
+    //reset grads from prev batches
+    std::vector<std::vector<double>> nodeGradientSums;
+    nodeGradientSums.reserve(nodeGradients.size()); //one vec per layer
+    for (auto& layer : nodeGradients){
+        nodeGradientSums.emplace_back(layer.size(), 0.0);
+    }
+    std::vector<std::vector<double>> biasGradientSums;
+    biasGradientSums.reserve(biasGradients.size());
+    for (auto& layer : biasGradients){
+        biasGradientSums.emplace_back(layer.size(), 0.0);
+    }
+    networkWeights weightGradientSums;
+    weightGradientSums.reserve(weightGradients.size());
+    for (auto& layer : weightGradients){
+        weightGradientSums.emplace_back(); 
+        weightGradientSums.back().reserve(layer.size());
+        for (auto& weightsFromNode : layer){
+            weightGradientSums.back().emplace_back(weightsFromNode.size(), 0.0);
+        }
+    }
+
     for (auto& dataPoint : dataSample){
         passInputs(dataPoint.first);
         updateAll();
@@ -114,15 +131,20 @@ void NeuralNetwork::backpropagate(trainingData& dataSample){
         
         for (int l = layerSizes.size() - 1; l >= 0; l--){//for each layer, backwards
             for(int n = 0; n < layerSizes[l]; n++){//for each node in layer
-                nodes[l][n]->updateGradients(expectedValues); //node updateGradients, includes updating personal gradient and the "global" gradient of the network.
-                nodeGradientSums[l][n] += nodeGradients[l][n];
-                biasGradientSums[l][n] += biasGradients[l][n];
+                //input nodes have no bias and nothing uses their gradients. Skipping them
+                // saves a lot of training time.
+                if (l > 0){
+                    nodes[l][n]->updateGradients(expectedValues); //node updateGradients, updates personal and global of network
+                    nodeGradientSums[l][n] += nodeGradients[l][n];
+                    biasGradientSums[l][n] += biasGradients[l][n];
+                }
                 //update weightGradients next
                 if (l < layerSizes.size() - 1){//if not last layer
                     for (int nextN = 0; nextN < layerSizes[l + 1]; nextN++){//for each node in the next
-                        weightGradients[l][n][nextN] =  activationDerivative(nodes[l][n]->preActivationValue) * 
-                                nodes[l][n]->value * //deriv. of preActVal
-                                nodes[l + 1][nextN]->gradient; //grad of next node w/respect to output
+                        // Node::updateGradients() already computes
+                        // biasGradient = network->activationDerivative(preActivationValue) * gradient;
+                        weightGradients[l][n][nextN] = nodes[l][n]->value * //deriv. of next node's preActVal w/respect to this weight
+                                nodes[l + 1][nextN]->biasGradient; //activation deriv. of next node times grad of next node w/respect to output
                         weightGradientSums[l][n][nextN] += weightGradients[l][n][nextN];
                     }
                 }
